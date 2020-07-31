@@ -1,0 +1,47 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: hello-tf
+  namespace: default
+data:
+  hello.py: |
+    import tensorflow as tf
+    msg = tf.constant('Hello, TensorFlow!')
+    tf.print(msg)
+      
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: hello-tf
+  name: hello-tf
+  namespace: default
+spec:
+  backoffLimit: 0
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      labels:
+        app: hello-tf
+    spec:
+      containers:
+      - command:
+        - /bin/bash
+        - -c
+        - "python /test/hello.py"
+        image: tensorflow/tensorflow
+        imagePullPolicy: Always
+        name: hello-tf
+        volumeMounts:
+          - mountPath: /test
+            name: hello-tf-py
+
+      restartPolicy: Never
+      volumes:
+        - emptyDir: {}
+          name: shared
+        - name: hello-tf-py
+          configMap:
+            name:  hello-tf
